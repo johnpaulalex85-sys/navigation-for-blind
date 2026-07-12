@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  aiden-app:
+    build: .
+    container_name: aiden_assistant
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./database:/app/database
+      - ./static/uploads:/app/static/uploads
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=False
+      - SECRET_KEY=production_secret_key_987654321
+    restart: unless-stopped

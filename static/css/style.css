@@ -1,0 +1,208 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+:root {
+    --bg-dark: #0f111a;
+    --card-bg: rgba(22, 28, 45, 0.7);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --primary-neon: #00f0ff;
+    --secondary-neon: #39ff14;
+    --warning-red: #ff3131;
+    --warning-yellow: #ffdf00;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(57, 255, 20, 0.05) 0%, transparent 40%);
+    background-attachment: fixed;
+}
+
+/* Custom Focus Ring for Accessibility */
+*:focus {
+    outline: 3px solid var(--primary-neon) !important;
+    outline-offset: 2px;
+}
+
+/* Glassmorphism panels */
+.glass-panel {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+    border-color: rgba(0, 240, 255, 0.25);
+    box-shadow: 0 8px 32px 0 rgba(0, 240, 255, 0.1);
+}
+
+/* Title & typography */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--text-main);
+}
+
+.text-neon-cyan {
+    color: var(--primary-neon);
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.text-neon-green {
+    color: var(--secondary-neon);
+    text-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+}
+
+.text-neon-red {
+    color: var(--warning-red);
+    text-shadow: 0 0 10px rgba(255, 49, 49, 0.4);
+}
+
+/* Large Accessibility Buttons */
+.btn-accessible {
+    padding: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border-radius: 16px;
+    border: 2px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.btn-accessible-primary {
+    background: linear-gradient(135deg, #00f0ff 0%, #0072ff 100%);
+    color: #000;
+    box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3);
+}
+
+.btn-accessible-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 24px rgba(0, 240, 255, 0.5);
+    color: #000;
+}
+
+.btn-accessible-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    border: 2px solid var(--border-color);
+}
+
+.btn-accessible-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.02);
+    border-color: var(--primary-neon);
+}
+
+.btn-accessible-danger {
+    background: linear-gradient(135deg, #ff3131 0%, #990000 100%);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(255, 49, 49, 0.3);
+}
+
+.btn-accessible-danger:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 24px rgba(255, 49, 49, 0.5);
+}
+
+/* Microphone pulse animation */
+.mic-btn.active {
+    background: var(--warning-red) !important;
+    color: #fff !important;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 49, 49, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 20px rgba(255, 49, 49, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 49, 49, 0);
+    }
+}
+
+/* Video Containers */
+.video-wrapper {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    background: #000;
+}
+
+#webcam-video {
+    width: 100%;
+    height: auto;
+    display: block;
+    transform: scaleX(-1); /* Mirror camera feed */
+}
+
+#canvas-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(-1); /* Mirror canvas to match mirrored camera */
+    pointer-events: none;
+}
+
+/* Active Alert Banner */
+.alert-banner {
+    background: rgba(255, 49, 49, 0.15);
+    border-left: 6px solid var(--warning-red);
+    border-radius: 8px;
+    padding: 1rem;
+    animation: flash 1s alternate infinite;
+}
+
+@keyframes flash {
+    0% { background: rgba(255, 49, 49, 0.1); }
+    100% { background: rgba(255, 49, 49, 0.3); }
+}
+
+/* Admin interactive map builder canvas */
+#map-canvas-container {
+    overflow: auto;
+    border: 2px solid var(--border-color);
+    background-color: #1e1e24;
+    border-radius: 12px;
+    position: relative;
+}
+
+#map-canvas {
+    display: block;
+    cursor: crosshair;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-neon);
+}

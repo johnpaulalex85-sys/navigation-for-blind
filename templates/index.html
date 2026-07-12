@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIDEN - Indoor Navigation Assistant</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .blueprint-canvas-wrapper {
+            position: relative;
+            background: #121420;
+            border-radius: 16px;
+            overflow: auto;
+            max-height: 500px;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #blueprint-canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        .drag-drop-zone {
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .drag-drop-zone:hover {
+            border-color: var(--primary-neon);
+            background: rgba(0, 240, 255, 0.03);
+        }
+    </style>
+</head>
+<body aria-label="AIDEN Public Navigation Home">
+    <header class="py-4 border-bottom border-secondary mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <i class="fa-solid fa-eye-slash fa-2xl text-neon-cyan" aria-hidden="true"></i>
+                <h1 class="m-0 fs-2" id="title-heading">AIDEN <span class="fs-5 text-neon-green">Indoor Navigation</span></h1>
+            </div>
+            <span class="badge bg-success fs-6 px-3 py-2" id="system-status-badge">
+                <i class="fa-solid fa-circle-check me-2" aria-hidden="true"></i>System Online
+            </span>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="row justify-content-center text-center mb-4">
+            <div class="col-lg-8">
+                <h2 class="display-5 mb-2">Upload Blueprint & Plan Route</h2>
+                <p class="fs-5 text-secondary">
+                    Upload your building plan blueprint image. The system will automatically detect the room layouts, nodes, and pathways to prepare your audio tour map.
+                </p>
+            </div>
+        </div>
+
+        <div class="row g-4 justify-content-center mb-5">
+            <!-- Step 1: Upload and Map Canvas -->
+            <div class="col-lg-7">
+                <div class="glass-panel p-4 h-100">
+                    <h3 class="fs-4 mb-3 text-neon-cyan">
+                        <i class="fa-solid fa-map-location-dot me-2"></i>Step 1: Upload Building Plan
+                    </h3>
+                    
+                    <!-- File Uploader Dropzone -->
+                    <div id="dropzone" class="blueprint-canvas-wrapper drag-drop-zone mb-3" onclick="triggerFileSelect()">
+                        <div id="upload-prompt">
+                            <i class="fa-solid fa-file-image fa-4x text-neon-cyan mb-3"></i>
+                            <h4 class="fs-5">Drag & Drop Building Blueprint</h4>
+                            <p class="text-muted m-0">Supports JPG, PNG, and JPEG formats</p>
+                        </div>
+                        <canvas id="blueprint-canvas" class="d-none"></canvas>
+                        <input type="file" id="blueprint-file-input" accept="image/*" class="d-none" onchange="handleFileSelect(event)">
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center text-muted">
+                        <span id="analysis-status">Ready. Awaiting upload.</span>
+                        <button class="btn btn-sm btn-outline-secondary px-3" onclick="triggerFileSelect()">
+                            <i class="fa-solid fa-folder-open me-2"></i>Select File
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Route Controls and Configuration -->
+            <div class="col-lg-5">
+                <div class="glass-panel p-4 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <h3 class="fs-4 mb-3 text-neon-green">
+                            <i class="fa-solid fa-location-arrow me-2"></i>Step 2: Choose Destination
+                        </h3>
+                        
+                        <div class="mb-4">
+                            <label for="select-destination-room" class="form-label text-muted fs-6">Target Room / Facility</label>
+                            <select id="select-destination-room" class="form-select bg-dark text-white border-secondary py-3 fs-5" aria-label="Choose your target room" disabled>
+                                <option value="">-- Upload blueprint to find rooms --</option>
+                            </select>
+                        </div>
+
+                        <!-- Voice assistant shortcut directly on homepage -->
+                        <div class="border border-secondary rounded p-3 bg-dark mb-4 text-center">
+                            <h4 class="fs-5 mb-2"><i class="fa-solid fa-microphone me-2 text-neon-cyan"></i>Say Destination</h4>
+                            <button id="btn-home-mic" class="btn btn-accessible btn-accessible-secondary mic-btn py-3 fs-5 w-100" onclick="toggleHomeMic()" disabled>
+                                <i class="fa-solid fa-microphone"></i>Press and Speak
+                            </button>
+                            <p id="mic-status-text" class="text-muted m-0 mt-2 fs-6">Say e.g. "Take me to Room 102" or "Find exit"</p>
+                        </div>
+                    </div>
+
+                    <button id="btn-start-nav" class="btn btn-accessible btn-accessible-primary py-3 fs-4" onclick="proceedToNavigation()" disabled>
+                        <i class="fa-solid fa-compass"></i>Launch Navigation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-4 mt-5 border-top border-secondary text-center text-secondary">
+        <p class="m-0 fs-6">AIDEN Indoor Navigation Assistant &copy; 2026. Fully Automated blueprint graph analyzer.</p>
+    </footer>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const synth = window.speechSynthesis;
+        let detectedRooms = [];
+        let mapImage = new Image();
+        
+        const canvas = document.getElementById('blueprint-canvas');
+        const ctx = canvas.getContext('2d');
+        const uploadPrompt = document.getElementById('upload-prompt');
+        const selectDest = document.getElementById('select-destination-room');
+        const btnStart = document.getElementById('btn-start-nav');
+        const btnMic = document.getElementById('btn-home-mic');
+        const statusText = document.getElementById('analysis-status');
+        
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        function speak(text) {
+            if (synth.speaking) synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            synth.speak(utterance);
+        }
+
+        window.addEventListener('load', () => {
+            speak("Welcome to AIDEN. Please upload a building blueprint image to start navigation mapping.");
+            checkHealth();
+        });
+
+        function checkHealth() {
+            fetch('/status')
+                .then(res => res.json())
+                .then(data => {
+                    const badge = document.getElementById('system-status-badge');
+                    if(data.status === 'healthy') {
+                        badge.className = "badge bg-success fs-6 px-3 py-2";
+                        badge.innerHTML = '<i class="fa-solid fa-circle-check me-2"></i>System Online';
+                    } else {
+                        badge.className = "badge bg-danger fs-6 px-3 py-2";
+                        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2"></i>System Warning';
+                    }
+                })
+                .catch(() => {});
+        }
+
+        function triggerFileSelect() {
+            document.getElementById('blueprint-file-input').click();
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+            uploadFile(files[0]);
+        }
+
+        // Drag and Drop implementation
+        const dropzone = document.getElementById('dropzone');
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = "#39ff14";
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.style.borderColor = "rgba(255,255,255,0.2)";
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = "rgba(255,255,255,0.2)";
+            if (e.dataTransfer.files.length > 0) {
+                uploadFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        function uploadFile(file) {
+            statusText.innerText = "Uploading and analyzing blueprint...";
+            speak("Analyzing blueprint coordinates, please wait...");
+            
+            const formData = new FormData();
+            formData.append('blueprint', file);
+            
+            fetch('/api/analyze-blueprint', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) {
+                    statusText.innerText = "Error: " + data.error;
+                    speak("Failed to analyze blueprint layout.");
+                    return;
+                }
+                
+                statusText.innerText = `Blueprint analyzed! Extracted ${data.rooms.length} room nodes.`;
+                speak(`Blueprint analyzed successfully. Extracted ${data.rooms.length} room locations.`);
+                
+                detectedRooms = data.rooms;
+                
+                // Draw map preview
+                uploadPrompt.classList.add('d-none');
+                canvas.classList.remove('d-none');
+                
+                mapImage.src = data.map_url + '?t=' + new Date().getTime();
+                mapImage.onload = () => {
+                    drawMap(data.nodes, data.edges);
+                };
+                
+                // Populate selector dropdown
+                populateRoomsDropdown(data.rooms);
+                
+                // Enable controls
+                selectDest.removeAttribute('disabled');
+                btnStart.removeAttribute('disabled');
+                btnMic.removeAttribute('disabled');
+            })
+            .catch(err => {
+                console.error(err);
+                statusText.innerText = "Server connection lost.";
+                speak("Connection error during analysis.");
+            });
+        }
+
+        function populateRoomsDropdown(rooms) {
+            selectDest.innerHTML = '<option value="">-- Select Destination --</option>';
+            rooms.forEach(r => {
+                selectDest.innerHTML += `<option value="${r.room_number}">Room ${r.room_number} (${r.node_name})</option>`;
+            });
+        }
+
+        function drawMap(nodes, edges) {
+            // Set canvas resolution to match natural layout or standard aspect
+            canvas.width = 800;
+            canvas.height = 500;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
+            
+            // Draw Edges
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+            ctx.lineWidth = 3;
+            edges.forEach(edge => {
+                const src = nodes.find(n => n.id === edge.source_node);
+                const dest = nodes.find(n => n.id === edge.destination_node);
+                if (src && dest) {
+                    // Coordinates need to be scaled if the image was downscaled
+                    ctx.beginPath();
+                    ctx.moveTo(src.x_coordinate, src.y_coordinate);
+                    ctx.lineTo(dest.x_coordinate, dest.y_coordinate);
+                    ctx.stroke();
+                }
+            });
+            
+            // Draw Nodes
+            nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x_coordinate, node.y_coordinate, 8, 0, 2 * Math.PI);
+                ctx.fillStyle = '#39ff14'; // neon green node
+                ctx.fill();
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '11px Outfit';
+                ctx.fillText(node.node_name, node.x_coordinate + 12, node.y_coordinate + 4);
+            });
+        }
+
+        function proceedToNavigation() {
+            const dest = selectDest.value;
+            if(!dest) {
+                speak("Please choose a destination room first.");
+                return;
+            }
+            speak("Proceeding to navigation dashboard.");
+            window.location.href = `/navigation?dest=${encodeURIComponent(dest)}`;
+        }
+
+        // Voice Command Microphone Recorder for Home Page
+        async function toggleHomeMic() {
+            if (isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                btnMic.innerHTML = '<i class="fa-solid fa-microphone"></i>Press and Speak';
+                btnMic.className = "btn btn-accessible btn-accessible-secondary mic-btn py-3 fs-5 w-100";
+            } else {
+                try {
+                    speak("Listening for room command...");
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    audioChunks = [];
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) audioChunks.push(e.data);
+                    };
+                    
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const formData = new FormData();
+                        formData.append('audio', audioBlob, 'cmd.webm');
+                        
+                        document.getElementById('mic-status-text').innerText = "Analyzing voice command...";
+                        
+                        try {
+                            const res = await fetch('/voice-command', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const result = await res.json();
+                            
+                            document.getElementById('mic-status-text').innerText = `Recognized: "${result.transcription}"`;
+                            
+                            if (result.command === "navigate" && result.target) {
+                                // Match result target against rooms list
+                                const targetRoom = result.target.toLowerCase();
+                                const match = detectedRooms.find(r => r.room_number.toLowerCase() === targetRoom || r.node_name.toLowerCase().includes(targetRoom));
+                                
+                                if(match) {
+                                    selectDest.value = match.room_number;
+                                    speak(`Selected destination Room ${match.room_number}. Launching navigation.`);
+                                    setTimeout(() => {
+                                        proceedToNavigation();
+                                    }, 1500);
+                                } else {
+                                    speak(`Could not locate Room ${result.target} on the blueprint plan. Available rooms are ` + 
+                                          detectedRooms.map(r => r.room_number).join(", "));
+                                }
+                            } else {
+                                speak("Command not recognized. Please say e.g. Navigate to Room 102");
+                            }
+                        } catch(err) {
+                            console.error(err);
+                            speak("Voice server transcription error.");
+                        }
+                        
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btnMic.innerHTML = '<i class="fa-solid fa-square text-white"></i>Stop Listening';
+                    btnMic.className = "btn btn-accessible btn-accessible-danger mic-btn active py-3 fs-5 w-100";
+                } catch(err) {
+                    speak("Microphone access denied.");
+                }
+            }
+        }
+    </script>
+</body>
+</html>

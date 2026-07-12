@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: aiden-indoor-navigation
+    env: docker
+    plan: starter
+    region: oregon
+    port: 5000
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+    disk:
+      name: aiden-storage
+      mountPath: /app/database
+      sizeGB: 1

@@ -1,0 +1,15 @@
+flask
+flask-socketio
+simple-websocket
+opencv-python-headless
+ultralytics
+easyocr
+openai-whisper
+numpy
+torch
+torchvision
+torchaudio
+soundfile
+python-dotenv
+gunicorn
+eventlet

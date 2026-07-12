@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIDEN Navigation Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .map-preview-wrapper {
+            position: relative;
+            background: #121420;
+            border-radius: 16px;
+            overflow: auto;
+            max-height: 480px;
+            border: 2px solid var(--border-color);
+        }
+        #navigation-map-canvas {
+            display: block;
+            cursor: default;
+        }
+    </style>
+</head>
+<body aria-label="AIDEN Navigation Dashboard">
+    <header class="py-3 border-bottom border-secondary mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <a href="/" class="btn btn-outline-secondary px-3 py-2 border-secondary me-2" aria-label="Go back to Home Page">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back
+                </a>
+                <h1 class="m-0 fs-3 text-neon-cyan">AIDEN <span class="fs-6 text-muted">Navigation Engine</span></h1>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                <span id="socket-status" class="badge bg-danger fs-6 px-3 py-2">
+                    <i class="fa-solid fa-circle-nodes me-2" aria-hidden="true"></i>Offline
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container-fluid px-lg-5">
+        <!-- Safety Alert Banner -->
+        <div id="safety-alert-banner" class="alert-banner d-none mb-4" role="alert" aria-live="assertive">
+            <div class="d-flex align-items-center gap-3">
+                <i class="fa-solid fa-triangle-exclamation fa-2xl text-neon-red" aria-hidden="true"></i>
+                <div>
+                    <h2 class="fs-4 m-0 text-neon-red">SAFETY WARNING</h2>
+                    <p id="safety-alert-text" class="m-0 fs-5">Obstacle detected ahead.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Column: Live Webcam Stream & Overlays -->
+            <div class="col-xl-6">
+                <div class="glass-panel p-3">
+                    <h3 class="fs-4 mb-3 d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-video me-2 text-neon-cyan" aria-hidden="true"></i>Live Camera Feed</span>
+                        <span id="fps-counter" class="fs-6 text-muted">FPS: 0</span>
+                    </h3>
+                    
+                    <div class="video-wrapper">
+                        <video id="webcam-video" autoplay playsinline muted></video>
+                        <canvas id="canvas-overlay"></canvas>
+                    </div>
+
+                    <div class="row g-2 mt-3">
+                        <div class="col-sm-6">
+                            <button id="btn-camera" class="btn btn-accessible btn-accessible-primary" onclick="toggleCamera()">
+                                <i class="fa-solid fa-camera-rotate" aria-hidden="true"></i>Open Camera
+                            </button>
+                        </div>
+                        <div class="col-sm-6">
+                            <button id="btn-mic" class="btn btn-accessible btn-accessible-secondary mic-btn" onclick="toggleMicRecording()">
+                                <i class="fa-solid fa-microphone" aria-hidden="true"></i>Press to Speak
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Auto Mapped Floor Plan & Guidance Instructions -->
+            <div class="col-xl-6">
+                <div class="glass-panel p-3 mb-4">
+                    <h3 class="fs-4 mb-3"><i class="fa-solid fa-route me-2 text-neon-green" aria-hidden="true"></i>Building Blueprint Map</h3>
+                    <div class="map-preview-wrapper">
+                        <canvas id="navigation-map-canvas" width="800" height="480"></canvas>
+                    </div>
+                </div>
+
+                <!-- Navigation Destination details -->
+                <div class="glass-panel p-4 mb-4">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4">
+                            <h3 class="fs-5 m-0 text-muted">Target Destination:</h3>
+                            <h4 id="dest-display-val" class="fs-3 text-neon-cyan m-0">None</h4>
+                        </div>
+                        <div class="col-md-5">
+                            <h3 class="fs-5 m-0 text-muted">Current Location (Auto OCR):</h3>
+                            <h4 id="loc-display-val" class="fs-3 text-neon-green m-0">Entrance Lobby</h4>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-sm btn-outline-danger w-100 py-2 fs-6" onclick="stopNavigation()">
+                                <i class="fa-solid fa-ban"></i> Stop Route
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voice guidance transcriptions -->
+                <div class="glass-panel p-4 mb-4">
+                    <h3 class="fs-4 mb-3 d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-volume-high me-2 text-neon-green" aria-hidden="true"></i>Voice Guidance</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="repeatInstruction()">
+                            <i class="fa-solid fa-redo"></i> Repeat
+                        </button>
+                    </h3>
+                    
+                    <div class="border border-secondary rounded p-3 bg-dark mb-3" style="min-height: 80px;" aria-live="polite">
+                        <p id="navigation-instruction-text" class="m-0 fs-4 text-neon-green">Awaiting location identification. Align camera with room signs to auto-localize...</p>
+                    </div>
+
+                    <!-- Voice parameters control -->
+                    <div class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <span class="text-muted fs-6"><i class="fa-solid fa-sliders me-1"></i>Volume:</span>
+                        </div>
+                        <div class="col">
+                            <input type="range" id="tts-volume" class="form-range" min="0" max="1" step="0.1" value="0.8">
+                        </div>
+                        <div class="col-auto ms-3">
+                            <span class="text-muted fs-6">Speed:</span>
+                        </div>
+                        <div class="col">
+                            <input type="range" id="tts-rate" class="form-range" min="0.5" max="2" step="0.1" value="1.0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live OCR lists and object logs -->
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="glass-panel p-3 h-100" style="max-height: 200px; overflow-y: auto;">
+                            <h4 class="fs-5 mb-2 border-bottom border-secondary pb-1">
+                                <i class="fa-solid fa-cubes me-2 text-neon-cyan"></i>Detected Obstacles
+                            </h4>
+                            <ul id="detections-list" class="list-unstyled m-0 fs-6 text-muted">
+                                <li>No obstacles detected</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="glass-panel p-3 h-100" style="max-height: 200px; overflow-y: auto;">
+                            <h4 class="fs-5 mb-2 border-bottom border-secondary pb-1">
+                                <i class="fa-solid fa-rectangle-ad me-2 text-neon-cyan"></i>Detected Room Signs
+                            </h4>
+                            <ul id="ocr-list" class="list-unstyled m-0 fs-6 text-muted">
+                                <li>Scanning for signs...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Socket.IO Client Lib -->
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.6.0/dist/socket.io.min.js"></script>
+    <!-- Frontend controller script -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
