@@ -77,12 +77,12 @@ def seed_data():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Check if building already exists
-    cursor.execute("SELECT id FROM buildings WHERE building_name = 'Main Engineering Block'")
-    row = cursor.fetchone()
-    if row:
+    # Check if database already has nodes (seeded or analyzed blueprint)
+    cursor.execute("SELECT COUNT(*) FROM navigation_nodes")
+    count = cursor.fetchone()[0]
+    if count > 0:
         conn.close()
-        return  # Already seeded
+        return  # Already populated, bypass seeding
     
     # 1. Insert Building
     cursor.execute("INSERT INTO buildings (building_name) VALUES ('Main Engineering Block')")
